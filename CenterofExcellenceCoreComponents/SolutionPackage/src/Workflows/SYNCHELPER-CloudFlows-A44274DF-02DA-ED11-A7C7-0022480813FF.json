@@ -476,48 +476,78 @@
                                 }
                               }
                             },
-                            "Get_owner_from_System_User": {
+                            "If_owner_listed_in_actual_object": {
+                              "actions": {
+                                "Get_owner_from_System_User": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "1de3b3af-dc33-4ef8-847d-38b190ce47c3"
+                                  },
+                                  "type": "OpenApiConnection",
+                                  "inputs": {
+                                    "host": {
+                                      "connectionName": "shared_commondataserviceforapps",
+                                      "operationId": "GetItemWithOrganization",
+                                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                    },
+                                    "parameters": {
+                                      "organization": "@outputs('Get_Evnt_Details')?['body/admin_environmentcdsinstanceurl']",
+                                      "entityName": "systemusers",
+                                      "recordId": "@first(outputs('Get_actual_object_for_owner')?['body/value'])?['_ownerid_value']",
+                                      "$select": "azureactivedirectoryobjectid"
+                                    },
+                                    "authentication": {
+                                      "type": "Raw",
+                                      "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                                    }
+                                  }
+                                },
+                                "Set_FlowOwnerID_-_SPowned": {
+                                  "runAfter": {
+                                    "Get_owner_from_System_User": [
+                                      "Succeeded"
+                                    ]
+                                  },
+                                  "metadata": {
+                                    "operationMetadataId": "388cc8d7-a73b-4820-a489-8b57b2333d31"
+                                  },
+                                  "type": "SetVariable",
+                                  "inputs": {
+                                    "name": "FlowOwnerID",
+                                    "value": "@{outputs('Get_owner_from_System_User')?['body/azureactivedirectoryobjectid']}"
+                                  }
+                                }
+                              },
                               "runAfter": {
                                 "Get_actual_object_for_owner": [
                                   "Succeeded"
                                 ]
                               },
-                              "metadata": {
-                                "operationMetadataId": "1de3b3af-dc33-4ef8-847d-38b190ce47c3"
-                              },
-                              "type": "OpenApiConnection",
-                              "inputs": {
-                                "host": {
-                                  "connectionName": "shared_commondataserviceforapps",
-                                  "operationId": "GetItemWithOrganization",
-                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
-                                },
-                                "parameters": {
-                                  "organization": "@outputs('Get_Evnt_Details')?['body/admin_environmentcdsinstanceurl']",
-                                  "entityName": "systemusers",
-                                  "recordId": "@first(outputs('Get_actual_object_for_owner')?['body/value'])?['_ownerid_value']",
-                                  "$select": "azureactivedirectoryobjectid"
-                                },
-                                "authentication": {
-                                  "type": "Raw",
-                                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                              "else": {
+                                "actions": {
+                                  "Set_FlowOwnerID_to_blank": {
+                                    "runAfter": {},
+                                    "metadata": {
+                                      "operationMetadataId": "a79cd539-164c-4533-92fb-6c689abe2e23"
+                                    },
+                                    "type": "SetVariable",
+                                    "inputs": {
+                                      "name": "FlowOwnerID",
+                                      "value": "@{''}"
+                                    }
+                                  }
                                 }
-                              }
-                            },
-                            "Set_FlowOwnerID_-_SPowned": {
-                              "runAfter": {
-                                "Get_owner_from_System_User": [
-                                  "Succeeded"
+                              },
+                              "expression": {
+                                "greater": [
+                                  "@length(outputs('Get_actual_object_for_owner')?['body/value'])",
+                                  0
                                 ]
                               },
                               "metadata": {
-                                "operationMetadataId": "388cc8d7-a73b-4820-a489-8b57b2333d31"
+                                "operationMetadataId": "051ff61c-6f50-4411-bc57-c71cd89b887b"
                               },
-                              "type": "SetVariable",
-                              "inputs": {
-                                "name": "FlowOwnerID",
-                                "value": "@{outputs('Get_owner_from_System_User')?['body/azureactivedirectoryobjectid']}"
-                              }
+                              "type": "If"
                             }
                           },
                           "runAfter": {
@@ -653,6 +683,7 @@
                               "item/admin_flowmodifiedon": "@outputs('Get_Flow_as_Admin')?['body/properties/lastModifiedTime']",
                               "item/admin_flowstate": "@outputs('Get_Flow_as_Admin')?['body/properties/state']",
                               "item/admin_flowidstring": "@triggerBody()['text_2']",
+                              "item/admin_haspremiumconnectors": "@outputs('hasPremium')",
                               "item/admin_inventoryme": false,
                               "item/admin_inventorymyflowactiondetails": true,
                               "item/admin_recordguidasstring": "@triggerBody()['text_2']",
@@ -716,6 +747,7 @@
                                 "item/admin_flowstate": "@outputs('Get_Flow_as_Admin')?['body/properties/state']",
                                 "item/admin_flowsuspensionreason": "@coalesce(outputs('Get_Flow_as_Admin')?['body/properties/flowSuspensionReason'], '')",
                                 "item/admin_flowidstring": "@triggerBody()['text_2']",
+                                "item/admin_haspremiumconnectors": "@outputs('hasPremium')",
                                 "item/admin_inventoryme": false,
                                 "item/admin_inventorymyflowactiondetails": true,
                                 "item/admin_FlowCreator@odata.bind": "admin_makers(@{outputs('CreatorID_Validated')})",
@@ -855,7 +887,7 @@
                             },
                             "List_HttpRequestReceived": {
                               "runAfter": {
-                                "GUID_HttpWebhook": [
+                                "GUID_TeamsWebhook": [
                                   "Succeeded"
                                 ]
                               },
@@ -916,6 +948,46 @@
                               },
                               "type": "Compose",
                               "inputs": "@first(outputs('List_HttpRequestReceived')?['body/value'])?['admin_connectorid']"
+                            },
+                            "List_TeamsWebhook": {
+                              "runAfter": {
+                                "GUID_HttpWebhook": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "metadata": {
+                                "operationMetadataId": "7a39cd19-d939-4096-bfa4-e65155ef439b"
+                              },
+                              "type": "OpenApiConnection",
+                              "inputs": {
+                                "host": {
+                                  "connectionName": "shared_commondataserviceforapps",
+                                  "operationId": "ListRecords",
+                                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                                },
+                                "parameters": {
+                                  "entityName": "admin_connectors",
+                                  "$select": "admin_connectorid",
+                                  "$filter": "admin_id eq 'TeamsWebhook'",
+                                  "$top": 1
+                                },
+                                "authentication": {
+                                  "type": "Raw",
+                                  "value": "@json(decodeBase64(triggerOutputs().headers['X-MS-APIM-Tokens']))['$ConnectionKey']"
+                                }
+                              }
+                            },
+                            "GUID_TeamsWebhook": {
+                              "runAfter": {
+                                "List_TeamsWebhook": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "metadata": {
+                                "operationMetadataId": "02224a36-f5e6-4cc3-83a6-d0eb96350a51"
+                              },
+                              "type": "Compose",
+                              "inputs": "@first(outputs('List_TeamsWebhook')?['body/value'])?['admin_connectorid']"
                             }
                           },
                           "runAfter": {
@@ -982,17 +1054,6 @@
                 },
                 "Prepare_Connection_String": {
                   "actions": {
-                    "Select_type": {
-                      "runAfter": {},
-                      "metadata": {
-                        "operationMetadataId": "fe4a6a63-c900-412e-ab56-ec7a6ac89c4f"
-                      },
-                      "type": "Select",
-                      "inputs": {
-                        "from": "@coalesce(outputs('Get_Flow_as_Admin')?['body/properties/definitionSummary/actions'], '')",
-                        "select": "@item()?['type']"
-                      }
-                    },
                     "add_HTTP_Webhook": {
                       "runAfter": {
                         "add_HTTP": [
@@ -1003,7 +1064,7 @@
                         "operationMetadataId": "39421be2-1c60-4e91-aadd-bdfb8807fb6b"
                       },
                       "type": "Compose",
-                      "inputs": "@if(contains(body('Select_type'), 'HttpWebhook'), ',HttpWebhook', '')"
+                      "inputs": "@if(contains(body('Select_triggers'), 'HttpWebhook'), ',HttpWebhook', '')"
                     },
                     "add_HTTP": {
                       "runAfter": {
@@ -1271,12 +1332,12 @@
                       "type": "Select",
                       "inputs": {
                         "from": "@coalesce(outputs('Get_Flow_as_Admin')?['body/properties/definitionSummary/triggers'], '')",
-                        "select": "@item()?['kind']"
+                        "select": "@coalesce(item()?['kind'], item()?['type'])"
                       }
                     },
                     "add_HTTP_Request": {
                       "runAfter": {
-                        "add_HTTP_Webhook": [
+                        "add_TeamsWebhook": [
                           "Succeeded"
                         ]
                       },
@@ -1296,7 +1357,81 @@
                         "operationMetadataId": "080b7d68-d39d-46a9-ae07-afc68b2e8572"
                       },
                       "type": "Compose",
-                      "inputs": "@concat(coalesce(outputs('Joined_Connectors_String'), ''), outputs('add_HTTP_Webhook'), outputs('add_HTTP'), outputs('add_HTTP_Request'))"
+                      "inputs": "@concat(coalesce(outputs('Joined_Connectors_String'), ''), outputs('add_TeamsWebhook'), outputs('add_HTTP_Webhook'), outputs('add_HTTP'), outputs('add_HTTP_Request'))"
+                    },
+                    "add_TeamsWebhook": {
+                      "runAfter": {
+                        "add_HTTP_Webhook": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "7b07f2a2-f0cb-4dd9-9405-676f3479cdec"
+                      },
+                      "type": "Compose",
+                      "inputs": "@if(contains(body('Select_triggers'), 'TeamsWebhook'), ',TeamsWebhook', '')"
+                    },
+                    "Tier": {
+                      "actions": {
+                        "Select_tier": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "9a84fe0c-facb-4240-aea2-735abb2130ca"
+                          },
+                          "type": "Select",
+                          "inputs": {
+                            "from": "@coalesce(outputs('Get_Flow_as_Admin')?['body/properties/connectionReferences'], '')",
+                            "select": "@item()?['apiDefinition/properties/tier']"
+                          }
+                        },
+                        "hasPremium": {
+                          "runAfter": {
+                            "Filter_to_premium": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "db2d3c8a-d650-419d-8531-e10dce20fd34"
+                          },
+                          "type": "Compose",
+                          "inputs": "@if(equals(length(body('Filter_to_premium')), 0), false, true)"
+                        },
+                        "Filter_to_premium": {
+                          "runAfter": {
+                            "Select_tier": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "446ba9bd-c6d5-47c6-ac37-8255971dca38"
+                          },
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@body('Select_tier')",
+                            "where": "@equals(item(), 'Premium')"
+                          }
+                        }
+                      },
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "1d6c11cd-aed2-413c-b62b-f0a5cd613fa7"
+                      },
+                      "type": "Scope"
+                    },
+                    "Select_type": {
+                      "runAfter": {
+                        "Tier": [
+                          "Succeeded"
+                        ]
+                      },
+                      "metadata": {
+                        "operationMetadataId": "fe4a6a63-c900-412e-ab56-ec7a6ac89c4f"
+                      },
+                      "type": "Select",
+                      "inputs": {
+                        "from": "@coalesce(outputs('Get_Flow_as_Admin')?['body/properties/definitionSummary/actions'], '')",
+                        "select": "@item()?['type']"
+                      }
                     }
                   },
                   "runAfter": {
@@ -1633,7 +1768,7 @@
                                 }
                               },
                               "runAfter": {
-                                "If_Http_Webhook_append_to_array": [
+                                "If_Teams_Webhook_append_to_array": [
                                   "Succeeded"
                                 ]
                               },
@@ -1645,6 +1780,41 @@
                               },
                               "metadata": {
                                 "operationMetadataId": "a007883b-cda0-443b-bd56-74bd294902d2"
+                              },
+                              "type": "If"
+                            },
+                            "If_Teams_Webhook_append_to_array": {
+                              "actions": {
+                                "Append_to_ActualConnectionsArray_-_teams_webhook": {
+                                  "runAfter": {},
+                                  "metadata": {
+                                    "operationMetadataId": "664cd089-00a3-4664-af43-af5a22e3be67"
+                                  },
+                                  "type": "AppendToArrayVariable",
+                                  "inputs": {
+                                    "name": "ActualConnectionsArray",
+                                    "value": {
+                                      "FlowID": "@triggerBody()['text_2']",
+                                      "ConnectorID": "@outputs('GUID_TeamsWebhook')",
+                                      "DisplayName": "Teams Webhook",
+                                      "Source": ""
+                                    }
+                                  }
+                                }
+                              },
+                              "runAfter": {
+                                "If_Http_Webhook_append_to_array": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "expression": {
+                                "greater": [
+                                  "@length(outputs('add_TeamsWebhook'))",
+                                  0
+                                ]
+                              },
+                              "metadata": {
+                                "operationMetadataId": "afeea02b-a87a-4374-8877-7f62f323ce4c"
                               },
                               "type": "If"
                             }

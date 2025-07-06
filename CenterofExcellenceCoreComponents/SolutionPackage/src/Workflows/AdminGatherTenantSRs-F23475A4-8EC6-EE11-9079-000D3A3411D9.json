@@ -11,7 +11,6 @@
         }
       },
       "shared_commondataserviceforapps": {
-        "impersonation": {},
         "runtimeSource": "embedded",
         "connection": {
           "connectionReferenceLogicalName": "admin_CoECoreDataverse"
@@ -50,7 +49,7 @@
           }
         },
         "Admin eMail (admin_AdminMail)": {
-          "defaultValue": "PowerPlatformAdmins@powercattools.onmicrosoft.com",
+          "defaultValue": "hannescoeadmins@powercattools.onmicrosoft.com",
           "type": "String",
           "metadata": {
             "schemaName": "admin_AdminMail",
@@ -99,9 +98,9 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerplatformforadmins",
                       "connectionName": "shared_powerplatformforadmins",
-                      "operationId": "Get-AdminEnvironment"
+                      "operationId": "Get-AdminEnvironment",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_powerplatformforadmins"
                     },
                     "parameters": {
                       "api-version": "2018-10-01"
@@ -141,9 +140,9 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                       "connectionName": "shared_commondataserviceforapps",
-                      "operationId": "ListRecords"
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                     },
                     "parameters": {
                       "entityName": "admin_tenantsecurityroleses",
@@ -283,9 +282,9 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                       "connectionName": "shared_commondataserviceforapps",
-                      "operationId": "ListRecords"
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                     },
                     "parameters": {
                       "entityName": "roles",
@@ -336,9 +335,9 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                       "connectionName": "shared_commondataserviceforapps",
-                      "operationId": "ListRecordsWithOrganization"
+                      "operationId": "ListRecordsWithOrganization",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                     },
                     "parameters": {
                       "organization": "current",
@@ -373,9 +372,9 @@
                   "type": "OpenApiConnection",
                   "inputs": {
                     "host": {
-                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                       "connectionName": "shared_commondataserviceforapps",
-                      "operationId": "ListRecords"
+                      "operationId": "ListRecords",
+                      "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                     },
                     "parameters": {
                       "entityName": "roles",
@@ -402,231 +401,261 @@
                 "Apply_to_each_envt": {
                   "foreach": "@body('Filter_to_Envts_with_Linked_Environment_Metadata')",
                   "actions": {
-                    "Apply_to_each_new_SR_with_TID": {
-                      "foreach": "@body('Find_new_SRs_with_TIDs')",
+                    "Parent_BU": {
                       "actions": {
-                        "Append_new_SR_with_TID_to_array_variable": {
+                        "Get_Parent_BU_for_ID": {
+                          "runAfter": {},
+                          "metadata": {
+                            "operationMetadataId": "89da7d22-7327-4f70-8a71-1318c676266c"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "ListRecordsWithOrganization",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "organization": "@items('Apply_to_each_envt')?['properties/linkedEnvironmentMetadata/instanceUrl']",
+                              "entityName": "businessunits",
+                              "$select": "businessunitid, name",
+                              "$filter": "_parentbusinessunitid_value eq null"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          }
+                        },
+                        "ParentBU": {
                           "runAfter": {
-                            "Filter_to_find_name": [
+                            "Get_Parent_BU_for_ID": [
                               "Succeeded"
                             ]
                           },
                           "metadata": {
-                            "operationMetadataId": "8f29a255-2c14-48a3-a1c2-b0ac14fc7407"
+                            "operationMetadataId": "d49ff5f6-a182-4551-9e93-6b4eb856457a"
                           },
-                          "type": "AppendToArrayVariable",
-                          "inputs": {
-                            "name": "TenantSRs",
-                            "value": {
-                              "SRName": "@first(body('Filter_to_find_name'))['name']",
-                              "SRTid": "@items('Apply_to_each_new_SR_with_TID')"
-                            }
-                          }
-                        },
-                        "Filter_to_find_name": {
+                          "type": "Compose",
+                          "inputs": "@first(outputs('Get_Parent_BU_for_ID')?['body/value'])?['businessunitid']"
+                        }
+                      },
+                      "runAfter": {},
+                      "metadata": {
+                        "operationMetadataId": "49220309-098e-444f-b0c9-a44ef4d1d380"
+                      },
+                      "type": "Scope"
+                    },
+                    "Gather": {
+                      "actions": {
+                        "Get_SRs_from_envt_with_TIDs": {
                           "runAfter": {},
                           "metadata": {
-                            "operationMetadataId": "12f15cb3-42ab-4911-9a76-9faa17675bfc"
+                            "operationMetadataId": "4f7e5a27-de2a-46eb-b060-87e3f94ec05c"
+                          },
+                          "type": "OpenApiConnection",
+                          "inputs": {
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "ListRecordsWithOrganization",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "organization": "@items('Apply_to_each_envt')?['properties/linkedEnvironmentMetadata/instanceUrl']",
+                              "entityName": "roles",
+                              "$select": "name, _roletemplateid_value ",
+                              "$filter": "_roletemplateid_value ne null and _businessunitid_value eq @{outputs('ParentBU')}"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          },
+                          "description": "first template ones"
+                        },
+                        "Select_SRs_from_envt_with_TIDs": {
+                          "runAfter": {
+                            "Get_SRs_from_envt_with_TIDs": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "46e1d014-a919-400a-96a1-44b2a0de44fe"
+                          },
+                          "type": "Select",
+                          "inputs": {
+                            "from": "@outputs('Get_SRs_from_envt_with_TIDs')?['body/value']",
+                            "select": "@item()?['_roletemplateid_value']"
+                          }
+                        },
+                        "Find_new_SRs_with_TIDs": {
+                          "runAfter": {
+                            "Select_SRs_from_envt_with_TIDs": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "7e14f554-e484-4787-a97c-4c057bad2545"
                           },
                           "type": "Query",
                           "inputs": {
-                            "from": "@outputs('Get_SRs_from_envt_with_TIDs')?['body/value']",
-                            "where": "@equals(item()?['_roletemplateid_value'], items('Apply_to_each_new_SR_with_TID'))"
+                            "from": "@body('Select_SRs_from_envt_with_TIDs')",
+                            "where": "@not(contains(body('Select_CoE_Envts_Tids'), item()))"
                           }
-                        }
-                      },
-                      "runAfter": {
-                        "Find_new_SRs_with_TIDs": [
-                          "Succeeded"
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "08867ee2-a3ee-4314-bf18-2aa39fc007e4"
-                      },
-                      "type": "Foreach",
-                      "runtimeConfiguration": {
-                        "concurrency": {
-                          "repetitions": 50
-                        }
-                      }
-                    },
-                    "Find_new_SRs_with_TIDs": {
-                      "runAfter": {
-                        "Select_SRs_from_envt_with_TIDs": [
-                          "Succeeded"
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "7e14f554-e484-4787-a97c-4c057bad2545"
-                      },
-                      "type": "Query",
-                      "inputs": {
-                        "from": "@body('Select_SRs_from_envt_with_TIDs')",
-                        "where": "@not(contains(body('Select_CoE_Envts_Tids'), item()))"
-                      }
-                    },
-                    "Select_SRs_from_envt_with_TIDs": {
-                      "runAfter": {
-                        "Get_SRs_from_envt_with_TIDs": [
-                          "Succeeded"
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "46e1d014-a919-400a-96a1-44b2a0de44fe"
-                      },
-                      "type": "Select",
-                      "inputs": {
-                        "from": "@outputs('Get_SRs_from_envt_with_TIDs')?['body/value']",
-                        "select": "@item()?['_roletemplateid_value']"
-                      }
-                    },
-                    "Get_SRs_from_envt": {
-                      "runAfter": {
-                        "Apply_to_each_new_SR_with_TID": [
-                          "Succeeded"
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "4f7e5a27-de2a-46eb-b060-87e3f94ec05c"
-                      },
-                      "type": "OpenApiConnection",
-                      "inputs": {
-                        "host": {
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
-                          "connectionName": "shared_commondataserviceforapps",
-                          "operationId": "ListRecordsWithOrganization"
                         },
-                        "parameters": {
-                          "organization": "@items('Apply_to_each_envt')?['properties/linkedEnvironmentMetadata/instanceUrl']",
-                          "entityName": "roles",
-                          "$select": "name",
-                          "$filter": "_roletemplateid_value eq null and _businessunitid_value eq @{outputs('ParentBU')}"
-                        },
-                        "authentication": "@parameters('$authentication')"
-                      },
-                      "description": "now non-templated ones"
-                    },
-                    "Select_SRs_from_envt": {
-                      "runAfter": {
-                        "Get_SRs_from_envt": [
-                          "Succeeded"
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "46e1d014-a919-400a-96a1-44b2a0de44fe"
-                      },
-                      "type": "Select",
-                      "inputs": {
-                        "from": "@outputs('Get_SRs_from_envt')?['body/value']",
-                        "select": "@item()?['name']"
-                      }
-                    },
-                    "Find_new_SRs": {
-                      "runAfter": {
-                        "Select_SRs_from_envt": [
-                          "Succeeded"
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "7e14f554-e484-4787-a97c-4c057bad2545"
-                      },
-                      "type": "Query",
-                      "inputs": {
-                        "from": "@body('Select_SRs_from_envt')",
-                        "where": "@not(contains(body('Select_CoE_Envts_Names'), item()))"
-                      }
-                    },
-                    "Apply_to_each_new_SR": {
-                      "foreach": "@body('Find_new_SRs')",
-                      "actions": {
-                        "Append_new_SR_with_TID_to_array_variable_2": {
-                          "runAfter": {},
-                          "metadata": {
-                            "operationMetadataId": "8f29a255-2c14-48a3-a1c2-b0ac14fc7407"
+                        "Apply_to_each_new_SR_with_TID": {
+                          "foreach": "@body('Find_new_SRs_with_TIDs')",
+                          "actions": {
+                            "Append_new_SR_with_TID_to_array_variable": {
+                              "runAfter": {
+                                "Filter_to_find_name": [
+                                  "Succeeded"
+                                ]
+                              },
+                              "metadata": {
+                                "operationMetadataId": "8f29a255-2c14-48a3-a1c2-b0ac14fc7407"
+                              },
+                              "type": "AppendToArrayVariable",
+                              "inputs": {
+                                "name": "TenantSRs",
+                                "value": {
+                                  "SRName": "@first(body('Filter_to_find_name'))['name']",
+                                  "SRTid": "@items('Apply_to_each_new_SR_with_TID')"
+                                }
+                              }
+                            },
+                            "Filter_to_find_name": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "12f15cb3-42ab-4911-9a76-9faa17675bfc"
+                              },
+                              "type": "Query",
+                              "inputs": {
+                                "from": "@outputs('Get_SRs_from_envt_with_TIDs')?['body/value']",
+                                "where": "@equals(item()?['_roletemplateid_value'], items('Apply_to_each_new_SR_with_TID'))"
+                              }
+                            }
                           },
-                          "type": "AppendToArrayVariable",
+                          "runAfter": {
+                            "Find_new_SRs_with_TIDs": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "08867ee2-a3ee-4314-bf18-2aa39fc007e4"
+                          },
+                          "type": "Foreach",
+                          "runtimeConfiguration": {
+                            "concurrency": {
+                              "repetitions": 50
+                            }
+                          }
+                        },
+                        "Get_SRs_from_envt": {
+                          "runAfter": {
+                            "Apply_to_each_new_SR_with_TID": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "4f7e5a27-de2a-46eb-b060-87e3f94ec05c"
+                          },
+                          "type": "OpenApiConnection",
                           "inputs": {
-                            "name": "TenantSRs",
-                            "value": {
-                              "SRName": "@items('Apply_to_each_new_SR')",
-                              "SRTid": "@null"
+                            "host": {
+                              "connectionName": "shared_commondataserviceforapps",
+                              "operationId": "ListRecordsWithOrganization",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
+                            },
+                            "parameters": {
+                              "organization": "@items('Apply_to_each_envt')?['properties/linkedEnvironmentMetadata/instanceUrl']",
+                              "entityName": "roles",
+                              "$select": "name",
+                              "$filter": "_roletemplateid_value eq null and _businessunitid_value eq @{outputs('ParentBU')}"
+                            },
+                            "authentication": "@parameters('$authentication')"
+                          },
+                          "description": "now non-templated ones"
+                        },
+                        "Select_SRs_from_envt": {
+                          "runAfter": {
+                            "Get_SRs_from_envt": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "46e1d014-a919-400a-96a1-44b2a0de44fe"
+                          },
+                          "type": "Select",
+                          "inputs": {
+                            "from": "@outputs('Get_SRs_from_envt')?['body/value']",
+                            "select": "@item()?['name']"
+                          }
+                        },
+                        "Find_new_SRs": {
+                          "runAfter": {
+                            "Select_SRs_from_envt": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "7e14f554-e484-4787-a97c-4c057bad2545"
+                          },
+                          "type": "Query",
+                          "inputs": {
+                            "from": "@body('Select_SRs_from_envt')",
+                            "where": "@not(contains(body('Select_CoE_Envts_Names'), item()))"
+                          }
+                        },
+                        "Apply_to_each_new_SR": {
+                          "foreach": "@body('Find_new_SRs')",
+                          "actions": {
+                            "Append_new_SR_with_TID_to_array_variable_2": {
+                              "runAfter": {},
+                              "metadata": {
+                                "operationMetadataId": "8f29a255-2c14-48a3-a1c2-b0ac14fc7407"
+                              },
+                              "type": "AppendToArrayVariable",
+                              "inputs": {
+                                "name": "TenantSRs",
+                                "value": {
+                                  "SRName": "@items('Apply_to_each_new_SR')",
+                                  "SRTid": "@null"
+                                }
+                              }
+                            }
+                          },
+                          "runAfter": {
+                            "Find_new_SRs": [
+                              "Succeeded"
+                            ]
+                          },
+                          "metadata": {
+                            "operationMetadataId": "08867ee2-a3ee-4314-bf18-2aa39fc007e4"
+                          },
+                          "type": "Foreach",
+                          "runtimeConfiguration": {
+                            "concurrency": {
+                              "repetitions": 50
                             }
                           }
                         }
                       },
                       "runAfter": {
-                        "Find_new_SRs": [
-                          "Succeeded"
+                        "CATCH_-_No_permissions": [
+                          "Skipped"
                         ]
                       },
                       "metadata": {
-                        "operationMetadataId": "08867ee2-a3ee-4314-bf18-2aa39fc007e4"
+                        "operationMetadataId": "936e7001-450c-4008-aab1-444a73763c1d"
                       },
-                      "type": "Foreach",
-                      "runtimeConfiguration": {
-                        "concurrency": {
-                          "repetitions": 50
-                        }
-                      }
+                      "type": "Scope"
                     },
-                    "ParentBU": {
+                    "CATCH_-_No_permissions": {
                       "runAfter": {
-                        "Get_Parent_BU_for_ID": [
-                          "Succeeded"
+                        "Parent_BU": [
+                          "Failed"
                         ]
                       },
                       "metadata": {
-                        "operationMetadataId": "d49ff5f6-a182-4551-9e93-6b4eb856457a"
+                        "operationMetadataId": "c591c97e-a739-40a6-9720-6d497543ca99"
                       },
                       "type": "Compose",
-                      "inputs": "@first(outputs('Get_Parent_BU_for_ID')?['body/value'])?['businessunitid']"
-                    },
-                    "Get_SRs_from_envt_with_TIDs": {
-                      "runAfter": {
-                        "ParentBU": [
-                          "Succeeded"
-                        ]
-                      },
-                      "metadata": {
-                        "operationMetadataId": "4f7e5a27-de2a-46eb-b060-87e3f94ec05c"
-                      },
-                      "type": "OpenApiConnection",
-                      "inputs": {
-                        "host": {
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
-                          "connectionName": "shared_commondataserviceforapps",
-                          "operationId": "ListRecordsWithOrganization"
-                        },
-                        "parameters": {
-                          "organization": "@items('Apply_to_each_envt')?['properties/linkedEnvironmentMetadata/instanceUrl']",
-                          "entityName": "roles",
-                          "$select": "name, _roletemplateid_value ",
-                          "$filter": "_roletemplateid_value ne null and _businessunitid_value eq @{outputs('ParentBU')}"
-                        },
-                        "authentication": "@parameters('$authentication')"
-                      },
-                      "description": "first template ones"
-                    },
-                    "Get_Parent_BU_for_ID": {
-                      "runAfter": {},
-                      "metadata": {
-                        "operationMetadataId": "89da7d22-7327-4f70-8a71-1318c676266c"
-                      },
-                      "type": "OpenApiConnection",
-                      "inputs": {
-                        "host": {
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
-                          "connectionName": "shared_commondataserviceforapps",
-                          "operationId": "ListRecordsWithOrganization"
-                        },
-                        "parameters": {
-                          "organization": "@items('Apply_to_each_envt')?['properties/linkedEnvironmentMetadata/instanceUrl']",
-                          "entityName": "businessunits",
-                          "$select": "businessunitid, name",
-                          "$filter": "_parentbusinessunitid_value eq null"
-                        },
-                        "authentication": "@parameters('$authentication')"
-                      }
+                      "inputs": "CATCH - No permissions"
                     }
                   },
                   "runAfter": {},
@@ -798,9 +827,9 @@
                       "type": "OpenApiConnection",
                       "inputs": {
                         "host": {
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                           "connectionName": "shared_commondataserviceforapps",
-                          "operationId": "CreateRecord"
+                          "operationId": "CreateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                         },
                         "parameters": {
                           "entityName": "admin_tenantsecurityroleses",
@@ -832,9 +861,9 @@
                       "type": "OpenApiConnection",
                       "inputs": {
                         "host": {
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                           "connectionName": "shared_commondataserviceforapps",
-                          "operationId": "CreateRecord"
+                          "operationId": "CreateRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                         },
                         "parameters": {
                           "entityName": "admin_tenantsecurityroleses",
@@ -893,9 +922,9 @@
                           "type": "OpenApiConnection",
                           "inputs": {
                             "host": {
-                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                               "connectionName": "shared_commondataserviceforapps",
-                              "operationId": "ListRecords"
+                              "operationId": "ListRecords",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                             },
                             "parameters": {
                               "entityName": "admin_tenantsecurityroleses",
@@ -917,9 +946,9 @@
                           "type": "OpenApiConnection",
                           "inputs": {
                             "host": {
-                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                               "connectionName": "shared_commondataserviceforapps",
-                              "operationId": "UpdateRecord"
+                              "operationId": "UpdateRecord",
+                              "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                             },
                             "parameters": {
                               "entityName": "admin_tenantsecurityroleses",
@@ -969,9 +998,9 @@
                                 "type": "OpenApiConnection",
                                 "inputs": {
                                   "host": {
-                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                                     "connectionName": "shared_commondataserviceforapps",
-                                    "operationId": "ListRecords"
+                                    "operationId": "ListRecords",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                                   },
                                   "parameters": {
                                     "entityName": "admin_customizedemails",
@@ -1009,9 +1038,9 @@
                                 "type": "OpenApiConnection",
                                 "inputs": {
                                   "host": {
-                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                                     "connectionName": "shared_commondataserviceforapps",
-                                    "operationId": "GetItem"
+                                    "operationId": "GetItem",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                                   },
                                   "parameters": {
                                     "entityName": "admin_customizedemails",
@@ -1068,9 +1097,9 @@
                                 "type": "OpenApiConnection",
                                 "inputs": {
                                   "host": {
-                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                                     "connectionName": "shared_commondataserviceforapps",
-                                    "operationId": "ListRecords"
+                                    "operationId": "ListRecords",
+                                    "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                                   },
                                   "parameters": {
                                     "entityName": "admin_coesolutionmetadatas",
@@ -1277,9 +1306,9 @@
                       "type": "OpenApiConnection",
                       "inputs": {
                         "host": {
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                           "connectionName": "shared_commondataserviceforapps",
-                          "operationId": "ListRecords"
+                          "operationId": "ListRecords",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                         },
                         "parameters": {
                           "entityName": "admin_tenantsecurityroleses",
@@ -1301,9 +1330,9 @@
                       "type": "OpenApiConnection",
                       "inputs": {
                         "host": {
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                           "connectionName": "shared_commondataserviceforapps",
-                          "operationId": "DeleteRecord"
+                          "operationId": "DeleteRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                         },
                         "parameters": {
                           "entityName": "admin_tenantsecurityroleses",
@@ -1334,9 +1363,9 @@
                       "type": "OpenApiConnection",
                       "inputs": {
                         "host": {
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                           "connectionName": "shared_commondataserviceforapps",
-                          "operationId": "ListRecords"
+                          "operationId": "ListRecords",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                         },
                         "parameters": {
                           "entityName": "admin_tenantsecurityroleses",
@@ -1358,9 +1387,9 @@
                       "type": "OpenApiConnection",
                       "inputs": {
                         "host": {
-                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                           "connectionName": "shared_commondataserviceforapps",
-                          "operationId": "DeleteRecord"
+                          "operationId": "DeleteRecord",
+                          "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                         },
                         "parameters": {
                           "entityName": "admin_tenantsecurityroleses",
@@ -1466,21 +1495,21 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                   "connectionName": "shared_commondataserviceforapps",
-                  "operationId": "CreateRecord"
+                  "operationId": "CreateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                 },
                 "parameters": {
                   "entityName": "admin_syncflowerrorses",
                   "item/admin_name": "@workflow()?['tags']['flowDisplayName']",
                   "item/admin_flowinstanceurl": "@concat(parameters('Power Automate Environment Variable (admin_PowerAutomateEnvironmentVariable)'), workflow()?['tags']['environmentName'], '/flows/', workflow()?['name'], '/runs/', workflow()?['run']['name'])"
                 },
+                "authentication": "@parameters('$authentication')",
                 "retryPolicy": {
                   "type": "exponential",
                   "count": 10,
                   "interval": "PT10S"
-                },
-                "authentication": "@parameters('$authentication')"
+                }
               }
             },
             "Terminate": {
@@ -1513,9 +1542,9 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                   "connectionName": "shared_commondataserviceforapps",
-                  "operationId": "ListRecords"
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                 },
                 "parameters": {
                   "entityName": "admin_coesolutionmetadatas",
@@ -1538,9 +1567,9 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                   "connectionName": "shared_commondataserviceforapps",
-                  "operationId": "UpdateRecord"
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                 },
                 "parameters": {
                   "entityName": "admin_coesolutionmetadatas",
@@ -1576,9 +1605,9 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                   "connectionName": "shared_commondataserviceforapps",
-                  "operationId": "UpdateRecord"
+                  "operationId": "UpdateRecord",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                 },
                 "parameters": {
                   "entityName": "admin_coesolutionmetadatas",
@@ -1597,9 +1626,9 @@
               "type": "OpenApiConnection",
               "inputs": {
                 "host": {
-                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps",
                   "connectionName": "shared_commondataserviceforapps",
-                  "operationId": "ListRecords"
+                  "operationId": "ListRecords",
+                  "apiId": "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                 },
                 "parameters": {
                   "entityName": "admin_coesolutionmetadatas",
@@ -1654,7 +1683,7 @@
         }
       }
     },
-    "templateName": null
+    "templateName": ""
   },
   "schemaVersion": "1.0.0.0"
 }
